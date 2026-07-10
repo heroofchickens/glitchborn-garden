@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>グリッチボーン ガーデン — GLITCHBORN GARDEN</title>
+  <meta name="description" content="ブラウザで遊べる育成バトルゲーム。タマゴから育てて、ごはん・トレーニング・バトル！ 放っておくと おなかがへるよ。">
+  <meta property="og:title" content="グリッチボーン ガーデン">
+  <meta property="og:description" content="ブラウザで遊べる3D育成バトルゲーム。タマゴから育てて、ごはん・トレーニング・バトル！">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://heroofchickens.github.io/glitchborn-garden/">
+  <meta property="og:image" content="https://heroofchickens.github.io/glitchborn-garden/ogp.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#7d95d8">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🥚</text></svg>">
+  <link rel="apple-touch-icon" href="./icon-180.png">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <canvas id="stage"></canvas>
+
+  <div id="ui">
+    <!-- 上段: 名前 + ステータス -->
+    <div id="top">
+      <div class="brand">
+        <h1><span id="mon-name">---</span><small id="mon-stage"></small></h1>
+        <span class="sub" id="mon-species">GLITCHBORN GARDEN</span>
+        <div class="mini-btns">
+          <button id="btn-switch"><i>👥</i>なかま</button>
+          <button id="btn-zukan"><i>📖</i>ずかん</button>
+          <button id="btn-achievements"><i>🏅</i>じっせき</button>
+          <button id="btn-share"><i>📣</i>じまん</button>
+        </div>
+      </div>
+      <div id="stats">
+        <div class="chip" id="stat-hunger"><span class="lbl">🍖 おなか</span><b>--</b></div>
+        <div class="chip" id="stat-strength"><span class="lbl">💪 きんりょく</span><b>--</b></div>
+        <div class="chip" id="stat-weight"><span class="lbl">⚖️ たいじゅう</span><b>--</b></div>
+        <div class="chip" id="stat-stamina"><span class="lbl">⚡ スタミナ</span><b>--</b></div>
+        <div class="chip" id="stat-poop"><span class="lbl">💩 うんち</span><b>--</b></div>
+        <div class="chip" id="stat-record"><span class="lbl">🏆 せんせき</span><b>0勝0敗</b><em id="win-streak" class="hidden"></em></div>
+      </div>
+    </div>
+
+    <!-- トースト -->
+    <div id="toast" class="hidden"></div>
+
+    <!-- 下段: 操作 -->
+    <div id="bottom">
+      <div id="hint">キャラをタップでなでる ・ ドラッグで回転</div>
+      <div id="actions">
+        <button data-act="feed" class="act-feed"><i>🍖</i><span>ごはん</span></button>
+        <button data-act="protein" class="act-protein"><i>🥤</i><span>プロテイン</span></button>
+        <button data-act="train" class="act-train"><i>💪</i><span>きたえる</span></button>
+        <button data-act="battle" class="act-battle"><i>⚔️</i><span>バトル</span></button>
+        <button data-act="clean" class="act-clean"><i>🧹</i><span>そうじ</span></button>
+        <button data-act="lights" id="btn-lights" class="act-lights"><i>💡</i><span>でんき</span></button>
+        <button data-act="medicine" class="act-medicine"><i>💊</i><span>くすり</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- タイトル画面（初回のみ） -->
+  <div id="title-overlay" class="overlay hidden">
+    <div class="title-card">
+      <div class="title-egg">🥚</div>
+      <div class="title-logo">
+        <span class="title-jp">グリッチボーン</span>
+        <span class="title-en">GLITCHBORN GARDEN</span>
+      </div>
+      <p class="title-copy">タマゴから育てる ふしぎな生きもの。<br>ごはんをあげて、きたえて、バトルへ！</p>
+      <button id="title-start">🥚 タマゴをむかえる</button>
+      <p class="title-note">じかんが たつと おなかが へるよ。ときどき ようすを みにきてね。</p>
+    </div>
+  </div>
+
+  <!-- トレーニングミニゲーム -->
+  <div id="train-overlay" class="overlay hidden">
+    <div class="panel">
+      <h3>💪 タイミングよく とめろ！</h3>
+      <div id="train-bar">
+        <div id="train-target"></div>
+        <div id="train-cursor"></div>
+      </div>
+      <div id="train-pips"><span>○</span><span>○</span><span>○</span></div>
+      <button id="train-stop">とめる！</button>
+    </div>
+  </div>
+
+  <!-- バトルバナー -->
+  <div id="battle-banner" class="hidden">
+    <div id="battle-vs">VS <span id="battle-opp">???</span></div>
+    <div id="battle-strategy"></div>
+    <div id="battle-pips"></div>
+  </div>
+
+  <!-- バトル作戦選択 -->
+  <div id="strategy-overlay" class="overlay hidden">
+    <div class="panel strategy-panel">
+      <h3>⚔️ 作戦をえらべ！</h3>
+      <div class="strategy-buttons">
+        <button data-strategy="aggressive">🔥<span>こうげき</span></button>
+        <button data-strategy="balanced">⚖️<span>バランス</span></button>
+        <button data-strategy="defensive">🛡️<span>まもり</span></button>
+      </div>
+      <p>こうげき ＞ まもり ＞ バランス ＞ こうげき</p>
+      <button id="strategy-cancel" class="ghost-btn">キャンセル</button>
+    </div>
+  </div>
+
+  <!-- 死亡オーバーレイ -->
+  <div id="death-overlay" class="overlay hidden">
+    <div class="panel">
+      <h3>おほしさまになった…</h3>
+      <p id="death-msg">たくさん あそんでくれて ありがとう</p>
+      <button id="restart-btn">🥚 あたらしいタマゴから やりなおす</button>
+    </div>
+  </div>
+
+  <!-- 名前入力ダイアログ -->
+  <div id="create-dialog" class="overlay hidden">
+    <div class="panel">
+      <h3>🥚 名前をつけてね</h3>
+      <input type="text" id="monster-name" placeholder="モンスターの名前" maxlength="12" autofocus>
+      <div class="row">
+        <button id="create-ok">うまれる！</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ずかん -->
+  <div id="zukan-overlay" class="overlay hidden">
+    <div class="panel">
+      <h3>📖 ずかん <span id="zukan-count"></span></h3>
+      <div id="zukan-grid"></div>
+      <p class="zukan-legend">そだてると カラーで登録。バトルであった子は なまえだけわかる</p>
+      <button id="zukan-close" class="ghost-btn">とじる</button>
+    </div>
+  </div>
+
+  <!-- なかま切替 -->
+  <div id="switch-overlay" class="overlay hidden">
+    <div class="panel">
+      <h3>👥 なかまをえらぶ</h3>
+      <div id="switch-list"></div>
+      <button id="switch-new">＋ あたらしいタマゴをむかえる</button>
+      <button id="switch-close" class="ghost-btn">とじる</button>
+    </div>
+  </div>
+
+  <!-- 実績一覧 -->
+  <div id="achievements-overlay" class="overlay hidden">
+    <div class="panel achievements-panel">
+      <h3>🏅 実績・称号 <span id="achievements-count"></span></h3>
+      <div id="achievements-list"></div>
+      <button id="achievements-close" class="ghost-btn">とじる</button>
+    </div>
+  </div>
+
+  <!-- 進化フラッシュ -->
+  <div id="flash"></div>
+
+  <script src="./vendor_three.min.js"></script>
+  <script src="./sfx.js"></script>
+  <script src="./engine.js"></script>
+  <script src="./api.js"></script>
+  <script src="./achievements.js"></script>
+  <script src="./stage3d.js"></script>
+  <script src="./game.js"></script>
+</body>
+</html>
